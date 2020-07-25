@@ -14,15 +14,9 @@ from pygame.locals import (
 # CONSTANTS 
 SCREEN_WIDTH = 640
 SCREEN_HEIGHT = 480
+ENEMY_COUNT = 20
 
-pygame.init()
 
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-
-ADDENEMY = pygame.USEREVENT + 1 # create new userevent
-pygame.time.set_timer(ADDENEMY, 250)
-
-run = True
 
 class Player(pygame.sprite.Sprite):
     def __init__(self):
@@ -44,52 +38,74 @@ class Player(pygame.sprite.Sprite):
         if self.rect.right < SCREEN_WIDTH and keys_pressed[K_RIGHT]:
             self.rect.move_ip(4, 0)
 
-class Enemy(pygame.sprite.Sprite):
+class Enemy(pygame.sprite.DirtySprite):
     def __init__(self):
         super(Enemy, self).__init__()
         self.surf = pygame.Surface((16, 4))
         self.surf.fill((255, 255, 255))
-        self.rect = self.surf.get_rect(
-            center = (random.randint(SCREEN_WIDTH + 16, SCREEN_WIDTH + 128),
-                      random.randint(0, SCREEN_HEIGHT))
-        )
+        self.rect = self.surf.get_rect(center = self._get_random_pos())
         self.speed = random.randint(4, 32)
 
     def update(self):
         self.rect.move_ip(-self.speed, 0)
         if self.rect.right < 0: self.kill()
 
+    def spawn(self):
+        self.rect.center = self._get_random_pos()
+    def _get_random_pos(self):
+        return random.randint(SCREEN_WIDTH + 16, SCREEN_WIDTH + 128), random.randint(0, SCREEN_HEIGHT)
+
+
+def main():
+    pygame.init()
+    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+
+    ADDENEMY = pygame.USEREVENT + 1 # create new userevent
+    pygame.time.set_timer(ADDENEMY, 250)
+
+    run = True        
+    enemy_counter = 0    
+    player = Player()
+
+
+    enemies = pygame.sprite.Group()
+    enemies_pool = [Enemy() for i in range(ENEMY_COUNT)]
+
+    all_sprites = pygame.sprite.Group()
+    all_sprites.add(player)
+
+
+    while run:
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                run = False
+
+            if event.type == KEYDOWN and event.key == K_ESCAPE:
+                run = False
+
+            if event.type == ADDENEMY:
+                enemy_counter = 0 if enemy_counter >= ENEMY_COUNT-1 else enemy_counter + 1
+                enemy = enemies_pool[enemy_counter]
+                if not enemy.alive():
+                    enemy.spawn()
+                    enemies.add(enemy)
+                    all_sprites.add(enemy)
+
+        player.update(pygame.key.get_pressed())
+
+        enemies.update()
+
+
+        screen.fill((0, 0, 50))
+        for entity in all_sprites:
+            screen.blit(entity.surf, entity.rect)
         
+        pygame.display.flip()
     
-player = Player()
-
-enemies = pygame.sprite.Group()
-all_sprites = pygame.sprite.Group()
-all_sprites.add(player)
-
-while run:
-    for event in pygame.event.get():
-        if event.type == QUIT:
-            run = False
-
-        if event.type == KEYDOWN and event.key == K_ESCAPE:
-            run = False
-
-        if event.type == ADDENEMY:
-            new_enemy = Enemy()
-            enemies.add(new_enemy)
-            all_sprites.add(new_enemy)
-
-    player.update(pygame.key.get_pressed())
-
-    enemies.update()
+    pygame.quit()
 
 
-    screen.fill((0, 0, 50))
-    for entity in all_sprites:
-        screen.blit(entity.surf, entity.rect)
-    
-    pygame.display.flip()
 
-    
-pygame.quit()
+if __name__ == "__main__":
+    main()    
+
