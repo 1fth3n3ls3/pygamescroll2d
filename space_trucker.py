@@ -44,7 +44,7 @@ class Enemy(pygame.sprite.DirtySprite):
         self.surf = pygame.Surface((16, 4))
         self.surf.fill((255, 255, 255))
         self.rect = self.surf.get_rect(center = self._get_random_pos())
-        self.speed = random.randint(4, 32)
+        self.speed = random.randint(4, 16)
 
     def update(self):
         self.rect.move_ip(-self.speed, 0)
@@ -57,7 +57,7 @@ class Enemy(pygame.sprite.DirtySprite):
 
 
 def main():
-    pygame.init()
+    clock = pygame.time.Clock()
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
     ADDENEMY = pygame.USEREVENT + 1 # create new userevent
@@ -91,6 +91,10 @@ def main():
                     enemies.add(enemy)
                     all_sprites.add(enemy)
 
+            if pygame.sprite.spritecollideany(player, enemies):
+                player.kill()
+                run = False
+
         player.update(pygame.key.get_pressed())
 
         enemies.update()
@@ -101,11 +105,16 @@ def main():
             screen.blit(entity.surf, entity.rect)
         
         pygame.display.flip()
+        clock.tick(60)
     
-    pygame.quit()
 
 
 
 if __name__ == "__main__":
-    main()    
+    pygame.init()
+    import cProfile as profile
+    profile.run("main()")
+    # main()  
+    pygame.quit()
+
 
